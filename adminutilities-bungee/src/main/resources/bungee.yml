@@ -1,5 +1,5 @@
-name: ${name}
+name: ${pluginName}
 version: ${version}
 author: ${author}
-main: ${mainClass}
-softdepend: [LuckPerms]
+main: ${bungeeMainClass}
+softdepend: [LuckPerms, SZLobbySystem]
