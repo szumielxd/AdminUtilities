@@ -9,23 +9,22 @@
 	<groupId>me.szumielxd</groupId>
 	<artifactId>adminutilities-parent</artifactId>
 	<version>${revision}</version>
-	<url>https://github.com/szumielxd/DiscordBridge/</url>
+	<url>${website}</url>
 	<name>${pluginName}</name>
 	<description>Misc commands to improve administration on server.</description>
 
 	<properties>
 		<java.version>1.8</java.version>
 		<pluginName>SZAdminUtilities</pluginName>
+		<pluginId>szadminutilities</pluginId>
 		<author>szumielxd</author>
+		<website>https://github.com/szumielxd/AdminUtilities/</website>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<package>me.szumielxd.adminutilities</package>
 		<velocityMainClass>${package}.velocity.AdminUtilitiesVelocity</velocityMainClass>
 		<bungeeMainClass>${package}.bungee.AdminUtilitiesBungee</bungeeMainClass>
 		<revision>2.0.0-SNAPSHOT</revision>
-		<finalName>/../../target/${project.artifactId}-${git.commit.id.abbrev}-${project.version}</finalName>
-		<finalNameObf>/../../target/${project.artifactId}-obf-${git.commit.id.abbrev}-${project.version}</finalNameObf>
-		<renamelog>${project.artifactId}_renamelog.xml</renamelog>
-		<shrinklog>${project.artifactId}_shrinklog.xml</shrinklog>
+		<finalName>/../../target/${pluginName}-${project.version}</finalName>
 	</properties>
 
 	<!-- Repositories -->
@@ -41,11 +40,6 @@
 		<repository>
 			<id>sonatype-oss-snapshots</id>
 			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-		</repository>
-		<repository>
-			<id>minefox</id>
-			<name>MineFox Public Repository</name>
-			<url>http://repo.minefox.pl/repository/maven-public/</url>
 		</repository>
 		<repository>
 			<id>jitpack.io</id>
@@ -71,6 +65,7 @@
 				<groupId>${project.groupId}</groupId>
 				<artifactId>adminutilities-common</artifactId>
 				<version>${revision}</version>
+				<scope>provided</scope>
 			</dependency>
 			<dependency>
 				<groupId>${project.groupId}</groupId>
@@ -132,55 +127,9 @@
 			</dependency>
 			<dependency>
 				<groupId>net.kyori</groupId>
-				<artifactId>adventure-platform-velocity</artifactId>
-				<version>4.0.0-SNAPSHOT</version>
-				<type>jar</type>
-				<scope>compile</scope>
-				<optional>true</optional>
-				<exclusions>
-					<exclusion>
-						<groupId>org.jetbrains</groupId>
-						<artifactId>annotations</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>org.checkerframework</groupId>
-						<artifactId>checker-qual</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>net.kyori</groupId>
-						<artifactId>examination-api</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>net.kyori</groupId>
-						<artifactId>adventure-api</artifactId>
-					</exclusion>
-					<!--exclusion>
-						<groupId>net.kyori</groupId>
-						<artifactId>adventure-nbt</artifactId>
-					</exclusion-->
-					<exclusion>
-						<groupId>net.kyori</groupId>
-						<artifactId>adventure-platform-api</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>net.kyori</groupId>
-						<artifactId>adventure-text-serializer-bungeecord</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>net.kyori</groupId>
-						<artifactId>adventure-text-serializer-gson</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>net.kyori</groupId>
-						<artifactId>adventure-text-serializer-legacy</artifactId>
-					</exclusion>
-				</exclusions>
-			</dependency>
-			<dependency>
-				<groupId>net.kyori</groupId>
 				<artifactId>adventure-platform-api</artifactId>
 				<version>4.0.0-SNAPSHOT</version>
-				<scope>compile</scope>
+				<scope>provided</scope>
 				<exclusions>
 					<exclusion>
 						<groupId>org.jetbrains</groupId>
@@ -196,7 +145,7 @@
 				<groupId>net.kyori</groupId>
 				<artifactId>adventure-text-serializer-bungeecord</artifactId>
 				<version>4.0.0-SNAPSHOT</version>
-				<scope>compile</scope>
+				<scope>provided</scope>
 				<exclusions>
 					<exclusion>
 						<groupId>org.jetbrains</groupId>
@@ -212,13 +161,20 @@
 				<groupId>net.kyori</groupId>
 				<artifactId>adventure-text-serializer-legacy</artifactId>
 				<version>4.8.1</version>
-				<scope>compile</scope>
+				<scope>provided</scope>
 			</dependency>
 			<dependency>
 				<groupId>net.kyori</groupId>
 				<artifactId>adventure-text-serializer-gson</artifactId>
 				<version>4.8.1</version>
-				<scope>compile</scope>
+				<scope>provided</scope>
+			</dependency>
+			
+			<dependency>
+				<groupId>me.carleslc.Simple-YAML</groupId>
+				<artifactId>Simple-Yaml</artifactId>
+				<version>1.7.1</version>
+				<scope>provided</scope>
 			</dependency>
 			
 			<!-- BungeeCord -->
@@ -227,12 +183,6 @@
 				<artifactId>bungeecord-api</artifactId>
 				<version>1.17-R0.1-SNAPSHOT</version>
 				<scope>provided</scope>
-				<exclusions>
-					<exclusion>
-						<groupId>com.google.code.gson</groupId>
-						<artifactId>gson</artifactId>
-					</exclusion>
-				</exclusions>
 			</dependency>
 			
 			<!-- Velocity -->
@@ -367,7 +317,7 @@
 						</filters>
 						<relocations>
 							<relocation>
-								<pattern>net.kyori.platform</pattern>
+								<pattern>net.kyori.adventure.platform</pattern>
 								<shadedPattern>${package}.lib.net.kyori.adventure.platform</shadedPattern>
 							</relocation>
 							<relocation>
@@ -378,9 +328,28 @@
 								<pattern>org.yaml.snakeyaml</pattern>
 								<shadedPattern>${package}.lib.org.yaml.snakeyaml</shadedPattern>
 							</relocation>
+							
+							<!-- Yes, I'm monster not programmer. I use relocation to replace variables -->
 							<relocation>
-								<pattern>com.github.curiousoddman.rgxgen</pattern>
-								<shadedPattern>${package}.lib.com.github.curiousoddman.rgxgen</shadedPattern>
+								<!-- Alphanumeric only... -->
+								<pattern>id----</pattern>
+								<shadedPattern>${pluginId}</shadedPattern>
+							</relocation>
+							<relocation>
+								<pattern>@pluginName@</pattern>
+								<shadedPattern>${pluginName}</shadedPattern>
+							</relocation>
+							<relocation>
+								<pattern>@version@</pattern>
+								<shadedPattern>${version}</shadedPattern>
+							</relocation>
+							<relocation>
+								<pattern>@author@</pattern>
+								<shadedPattern>${author}</shadedPattern>
+							</relocation>
+							<relocation>
+								<pattern>@description@</pattern>
+								<shadedPattern>${description}</shadedPattern>
 							</relocation>
 						</relocations>
 					</configuration>

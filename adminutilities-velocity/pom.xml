@@ -10,39 +10,104 @@
 		<dependency>
 			<groupId>${parent.groupId}</groupId>
 			<artifactId>adminutilities-common</artifactId>
+			<version>${revision}</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.velocitypowered</groupId>
 			<artifactId>velocity-api</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>me.carleslc.Simple-YAML</groupId>
-			<artifactId>Simple-Yaml</artifactId>
-			<version>1.7.1</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>17.0</version>
-			<type>jar</type>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>net.kyori</groupId>
-			<artifactId>adventure-platform-api</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.kyori</groupId>
-			<artifactId>adventure-text-serializer-bungeecord</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.kyori</groupId>
-			<artifactId>adventure-text-serializer-legacy</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.kyori</groupId>
-			<artifactId>adventure-text-serializer-gson</artifactId>
-		</dependency>
 	</dependencies>
+	
+	<!-- Build -->
+	<build>
+		<defaultGoal>clean package</defaultGoal>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+				<includes>
+					<include>**/*.java</include>
+					<include>plugin.yml</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>false</filtering>
+				<excludes>
+					<exclude>**/*.java</exclude>
+					<exclude>plugin.yml</exclude>
+				</excludes>
+			</resource>
+		</resources>
+	
+		<plugins>
+			
+			<!-- Replacer Plugin -->
+			<plugin>
+				<groupId>com.google.code.maven-replacer-plugin</groupId>
+				<artifactId>maven-replacer-plugin</artifactId>
+				<version>1.4.0</version>
+				<executions>                
+					<execution>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>replace</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<basedir>${project.build.directory}/classes</basedir>
+					<includes>
+						<include>velocity-plugin.json</include>
+					</includes>
+					<replacements>
+						<replacement>
+							<token>id----</token>
+							<value>${pluginId}</value>
+						</replacement>
+						<replacement>
+							<token>@pluginName@</token>
+							<value>${pluginName}</value>
+						</replacement>
+						<replacement>
+							<token>@version@</token>
+							<value>${parent.version}</value>
+						</replacement>
+						<replacement>
+							<token>@author@</token>
+							<value>${author}</value>
+						</replacement>
+						<replacement>
+							<token>@description@</token>
+							<value>${description}</value>
+						</replacement>
+						<replacement>
+							<token>@url@</token>
+							<value>${website}</value>
+						</replacement>
+					</replacements>                        
+				</configuration>
+			</plugin>
+			
+			<!-- Compiler plugin -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+			</plugin>
+			
+			<!-- Jar plugin -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+			</plugin>
+			
+			<!-- Shade plugin -->
+			<!--plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+			</plugin-->
+		</plugins>
+	</build>
 </project>
