@@ -1,6 +1,7 @@
 package me.szumielxd.adminutilities.common.commands;
 
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -70,7 +71,9 @@ public class StafflistCommand extends CommonCommand {
 				if (!staff.isEmpty()) for (Map.Entry<String, Map<UUID, Entry<String, Boolean>>> e : staff.entrySet()) {
 					String group = e.getKey();
 					Map<UUID, Entry<String, Boolean>> users = e.getValue();
-					Component groupDisplay = FORMAT_LINE.replaceText(rep("group", MiscUtil.parseComponent(Config.STAFF_LIST.getValueMap().get(group).toString(), false))).replaceText(rep("count", users.size()));
+					Component groupDisplay = FORMAT_LINE
+							.replaceText(rep("group", Component.empty().children(Arrays.asList(MiscUtil.parseComponent(Config.STAFF_LIST.getValueMap().get(group).toString(), false))))) // put replacement as children to avoid format inheritance from replacement
+							.replaceText(rep("count", users.size()));
 					message = message.append(Component.newline()).append(FORMAT_INDENTATION).append(groupDisplay);
 					length = MiscUtil.getPlainVisibleText(groupDisplay).length();
 					Iterator<UUID> iter = users.keySet().iterator();
