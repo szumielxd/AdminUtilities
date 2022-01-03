@@ -52,7 +52,7 @@
 				<filtering>true</filtering>
 				<includes>
 					<include>**/*.java</include>
-					<include>plugin.yml</include>
+					<include>bungee.yml</include>
 				</includes>
 			</resource>
 			<resource>
@@ -60,7 +60,7 @@
 				<filtering>false</filtering>
 				<excludes>
 					<exclude>**/*.java</exclude>
-					<exclude>plugin.yml</exclude>
+					<exclude>bungee.yml</exclude>
 				</excludes>
 			</resource>
 		</resources>
