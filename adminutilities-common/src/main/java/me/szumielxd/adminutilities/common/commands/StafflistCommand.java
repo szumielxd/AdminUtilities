@@ -109,7 +109,7 @@ public class StafflistCommand extends CommonCommand {
 	
 	
 	private CompletableFuture<Map<String, Map<UUID, Map.Entry<String, Boolean>>>> getCachedStaff() {
-		if (System.currentTimeMillis() > this.lastUpdate + 30*1000) {
+		if (System.currentTimeMillis() > this.lastUpdate + 10*1000) {
 			this.lastUpdate = System.currentTimeMillis();
 			try {
 				Class.forName("net.luckperms.api.LuckPermsProvider");
