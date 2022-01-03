@@ -1,6 +1,7 @@
 package me.szumielxd.adminutilities.common.objects;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.jetbrains.annotations.NotNull;
@@ -15,7 +16,7 @@ public interface CommonProxy {
 	
 	public @NotNull Collection<CommonPlayer> getPlayers();
 	
-	public @NotNull Collection<CommonPlayer> getPlayers(@NotNull String serverName);
+	public @NotNull Optional<Collection<CommonPlayer>> getPlayers(@NotNull String serverName);
 	
 	public @NotNull CommonScheduler getScheduler();
 	

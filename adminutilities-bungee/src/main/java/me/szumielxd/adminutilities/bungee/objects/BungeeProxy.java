@@ -1,7 +1,6 @@
 package me.szumielxd.adminutilities.bungee.objects;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,10 +44,9 @@ public class BungeeProxy implements CommonProxy {
 	}
 
 	@Override
-	public @NotNull Collection<CommonPlayer> getPlayers(@NotNull String serverName) {
+	public @NotNull Optional<Collection<CommonPlayer>> getPlayers(@NotNull String serverName) {
 		return Optional.ofNullable(this.plugin.getProxy().getServerInfo(Objects.requireNonNull(serverName, "serverName cannot be null")))
-				.map(ServerInfo::getPlayers).orElse(Collections.emptyList())
-				.parallelStream().map(p -> new BungeePlayer(this.plugin, p)).collect(Collectors.toList());
+				.map(ServerInfo::getPlayers).map(list -> list.parallelStream().map(p -> new BungeePlayer(this.plugin, p)).collect(Collectors.toList()));
 	}
 	
 	@Override

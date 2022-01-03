@@ -1,8 +1,8 @@
 package me.szumielxd.adminutilities.velocity.objects;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -45,10 +45,10 @@ public class VelocityProxy implements CommonProxy {
 	}
 
 	@Override
-	public @NotNull Collection<CommonPlayer> getPlayers(@NotNull String serverName) {
+	public @NotNull Optional<Collection<CommonPlayer>> getPlayers(@NotNull String serverName) {
 		return this.plugin.getProxy().getServer(Objects.requireNonNull(serverName, "serverName cannot be null"))
-				.map(RegisteredServer::getPlayersConnected).orElse(Collections.emptyList())
-				.parallelStream().map(p -> new VelocityPlayer(this.plugin, p)).collect(Collectors.toList());
+				.map(RegisteredServer::getPlayersConnected)
+				.map(list -> list.parallelStream().map(p -> new VelocityPlayer(this.plugin, p)).collect(Collectors.toList()));
 	}
 	
 	@Override
