@@ -63,7 +63,7 @@ public enum Config {
 	COMMAND_ADMLIST_FORMAT_ONLINE("command.admlist.format-online", "&a{player}"),
 	COMMAND_ADMLIST_FORMAT_OFFLINE("command.admlist.format-offline", "&7{player}"),
 	COMMAND_ADMLIST_FORMAT_SEPARATOR("command.admlist.format-separator", "&7, "),
-	COMMAND_ADMLIST_FORMAT_LINE("command.admlist.format-line", "{group}&7({count}): "),
+	COMMAND_ADMLIST_FORMAT_LINE("command.admlist.format-line", "{group}&r&7 ({count}): "),
 	COMMAND_ADMLIST_FORMAT_INDENTATION("command.admlist.format-indentation", 5),
 	COMMAND_ADMLIST_FOOTER("command.admlist.footer", "\n &8&m                                                                            \n"),
 	// report
