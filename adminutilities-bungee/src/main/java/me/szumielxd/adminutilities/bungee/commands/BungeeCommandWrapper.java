@@ -27,13 +27,13 @@ public class BungeeCommandWrapper extends Command implements TabExecutor {
 
 	@Override
 	public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
-		return this.command.onTabComplete(new BungeeSender(this.plugin, sender), args);
+		return this.command.onTabComplete(BungeeSender.wrap(this.plugin, sender), args);
 	}
 
 
 	@Override
 	public void execute(CommandSender sender, String[] args) {
-		this.command.execute(new BungeeSender(this.plugin, sender), args);
+		this.command.execute(BungeeSender.wrap(this.plugin, sender), args);
 	}
 
 }

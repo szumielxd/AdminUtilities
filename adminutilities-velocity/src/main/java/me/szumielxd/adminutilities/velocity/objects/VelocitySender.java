@@ -6,6 +6,8 @@ import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 
 import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.proxy.Player;
+
 import me.szumielxd.adminutilities.common.objects.CommonSender;
 import me.szumielxd.adminutilities.velocity.AdminUtilitiesVelocity;
 import net.kyori.adventure.identity.Identity;
@@ -69,6 +71,12 @@ public class VelocitySender implements CommonSender {
 	@Override
 	public void executeProxyCommand(@NotNull String command) {
 		this.plugin.getProxy().getCommandManager().executeAsync(this.sender, command);
+	}
+	
+	
+	public static @NotNull VelocitySender wrap(@NotNull AdminUtilitiesVelocity plugin, @NotNull CommandSource sender) {
+		if (Objects.requireNonNull(sender, "sender cannot be null") instanceof Player) return new VelocityPlayer(plugin, (Player) sender);
+		return new VelocitySender(plugin, sender);
 	}
 	
 

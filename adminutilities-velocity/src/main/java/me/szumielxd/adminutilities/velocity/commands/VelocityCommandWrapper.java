@@ -26,13 +26,13 @@ public class VelocityCommandWrapper implements SimpleCommand {
 
 	@Override
 	public void execute(@NotNull Invocation invocation) {
-		this.command.execute(new VelocitySender(this.plugin, invocation.source()), invocation.arguments());
+		this.command.execute(VelocitySender.wrap(this.plugin, invocation.source()), invocation.arguments());
 	}
 	
 	
 	@Override
 	public List<String> suggest(@NotNull Invocation invocation) {
-		return this.command.onTabComplete(new VelocitySender(this.plugin, invocation.source()), invocation.arguments());
+		return this.command.onTabComplete(VelocitySender.wrap(this.plugin, invocation.source()), invocation.arguments());
 	}
 	
 	

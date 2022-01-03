@@ -11,6 +11,7 @@ import net.kyori.adventure.identity.Identity;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 public class BungeeSender implements CommonSender {
 	
@@ -69,6 +70,12 @@ public class BungeeSender implements CommonSender {
 	@Override
 	public void executeProxyCommand(@NotNull String command) {
 		this.plugin.getProxy().getPluginManager().dispatchCommand(this.sender, command);
+	}
+	
+	
+	public static @NotNull BungeeSender wrap(@NotNull AdminUtilitiesBungee plugin, @NotNull CommandSender sender) {
+		if (Objects.requireNonNull(sender, "sender cannot be null") instanceof ProxiedPlayer) return new BungeePlayer(plugin, (ProxiedPlayer) sender);
+		return new BungeeSender(plugin, sender);
 	}
 	
 
