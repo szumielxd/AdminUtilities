@@ -224,7 +224,7 @@ public class ChatReportManager {
 		comp = MiscUtil.deepReplace(comp, Replacer.MESSAGES_LIST.getMatch(), messages);
 		comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
 		final Component c = comp;
-		this.plugin.getProxyServer().getPlayers().parallelStream().filter(this.plugin.hasPermAndNotLobby("adminutilities.admin.notify.chatreport")).forEach(p -> this.PREFIX.append(c));
+		this.plugin.getProxyServer().getPlayers().parallelStream().filter(this.plugin.hasPermAndNotLobby("adminutilities.admin.notify.chatreport")).forEach(p -> p.sendMessage(this.PREFIX.append(c)));
 	}
 	
 
