@@ -111,7 +111,7 @@ public class StafflistCommand extends CommonCommand {
 			try {
 				Class.forName("net.luckperms.api.LuckPermsProvider");
 			} catch (ClassNotFoundException e2) {
-				// fallback for lack of :uckPerms
+				// fallback for lack of LuckPerms
 				return this.cacheFuture = CompletableFuture.completedFuture(Collections.emptyMap());
 			}
 			final CompletableFuture<Map<String, Map<UUID, Map.Entry<String, Boolean>>>> future = new CompletableFuture<>();
