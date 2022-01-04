@@ -18,6 +18,8 @@ public interface CommonProxy {
 	
 	public @NotNull Optional<Collection<CommonPlayer>> getPlayers(@NotNull String serverName);
 	
+	public @NotNull CommonSender getConsole();
+	
 	public @NotNull CommonScheduler getScheduler();
 	
 
