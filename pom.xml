@@ -23,7 +23,7 @@
 		<package>me.szumielxd.adminutilities</package>
 		<velocityMainClass>${package}.velocity.AdminUtilitiesVelocity</velocityMainClass>
 		<bungeeMainClass>${package}.bungee.AdminUtilitiesBungee</bungeeMainClass>
-		<revision>2.0.0-SNAPSHOT</revision>
+		<revision>2.0.0</revision>
 		<finalName>/../../target/${pluginName}-${project.version}</finalName>
 	</properties>
 
