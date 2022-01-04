@@ -5,8 +5,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -25,6 +27,7 @@ import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.TextReplacementConfig;
 import net.luckperms.api.LuckPermsProvider;
+import net.luckperms.api.model.group.GroupManager;
 import net.luckperms.api.model.user.UserManager;
 import net.luckperms.api.node.matcher.NodeMatcher;
 import net.luckperms.api.node.types.InheritanceNode;
@@ -120,11 +123,16 @@ public class StafflistCommand extends CommonCommand {
 			final CompletableFuture<Map<String, Map<UUID, Map.Entry<String, Boolean>>>> future = new CompletableFuture<>();
 			new Thread(() -> {
 				try {
-					Map<String, Map<UUID, Map.Entry<String, Boolean>>> staff = new HashMap<>();
-					Set<String> groups = Config.STAFF_LIST.getValueMap().keySet();
-					groups.forEach(g -> staff.put(g, new HashMap<>())); // for correct order
+					Map<String, Map<UUID, Map.Entry<String, Boolean>>> staff = new LinkedHashMap<>();
 					UserManager mgr = LuckPermsProvider.get().getUserManager();
-					groups.parallelStream().forEach(g -> {
+					GroupManager gmgr = LuckPermsProvider.get().getGroupManager();
+					Integer.compare(1, 23);
+					// for correct order
+					Config.STAFF_LIST.getValueMap().keySet().stream().sorted((g1, g2) -> {
+						return -Integer.compare(Optional.ofNullable(gmgr.getGroup(g1)).map(gr -> gr.getWeight().orElse(0)).orElse(0),
+								Optional.ofNullable(gmgr.getGroup(g2)).map(gr -> gr.getWeight().orElse(0)).orElse(0));
+					}).distinct().forEachOrdered(g -> staff.put(g, new HashMap<>()));
+					staff.keySet().parallelStream().forEach(g -> {
 						Set<UUID> users;
 						try {
 							users = mgr.searchAll(NodeMatcher.key(InheritanceNode.builder(g).build().getKey())).get().keySet();
