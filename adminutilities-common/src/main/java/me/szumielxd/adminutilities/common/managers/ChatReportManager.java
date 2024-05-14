@@ -1,11 +1,22 @@
 package me.szumielxd.adminutilities.common.managers;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import me.szumielxd.adminutilities.common.AdminUtilities;
 import me.szumielxd.adminutilities.common.configuration.Config;
@@ -21,8 +32,8 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 public class ChatReportManager {
 	
 	
-	private HashMap<String, Entry<ChatReport, ExecutedTask>> reports = new HashMap<>();
-	public HashMap<String, Entry<ChatReport, ExecutedTask>> getActiveReports(){
+	private Map<String, Entry<ChatReport, ExecutedTask>> reports = new HashMap<>();
+	public Map<String, Entry<ChatReport, ExecutedTask>> getActiveReports(){
 		return new HashMap<>(reports);
 	}
 	
@@ -50,11 +61,17 @@ public class ChatReportManager {
 			return this.match;
 		}
 		public TextReplacementConfig rep(Object toReplace) {
-			if (toReplace instanceof ComponentLike) return TextReplacementConfig.builder().matchLiteral("{"+match+"}").replacement((ComponentLike) toReplace).build();
+			if (toReplace instanceof ComponentLike rep) return TextReplacementConfig.builder().matchLiteral("{"+match+"}").replacement(rep).build();
 			return TextReplacementConfig.builder().matchLiteral("{"+match+"}").replacement(String.valueOf(toReplace)).build();
 		}
 		
 		
+	}
+	
+	private enum ReportResult {
+		TIMEOUT,
+		ACCEPT,
+		REJECT
 	}
 	
 	
@@ -86,7 +103,7 @@ public class ChatReportManager {
 	}
 	
 	
-	private Component buildMessagesComponent(ArrayList<Entry<Long, String>> messages) {
+	private @NotNull Component buildMessagesComponent(@NotNull List<Entry<Long, String>> messages) {
 		if (messages.isEmpty()) return Component.empty();
 		Component component = Component.empty();
 		List<Component> list = new ArrayList<>();
@@ -103,10 +120,10 @@ public class ChatReportManager {
 	
 	
 	
-	public boolean registerReport(final ChatReport report) {
+	public boolean registerReport(@NotNull ChatReport report) {
 		
-		ArrayList<String> keys = new ArrayList<String>(reports.keySet());
-		HashMap<String, Entry<ChatReport, ExecutedTask>> map = new HashMap<>(reports);
+		List<String> keys = new ArrayList<>(reports.keySet());
+		Map<String, Entry<ChatReport, ExecutedTask>> map = new HashMap<>(reports);
 		if(!keys.isEmpty()) for(String code : keys) {
 			ChatReport cr = map.get(code).getKey();
 			if(cr.getMessages().equals(report.getMessages())) return false;
@@ -116,28 +133,12 @@ public class ChatReportManager {
 			reportCode = MiscUtil.randomString(7);
 		} while (reports.containsKey(reportCode));
 		final String code = reportCode;
-		ExecutedTask task = this.plugin.getProxyServer().getScheduler().runTaskLater(new Runnable() {
-			@Override
-			public void run() {
-				Component reason = LegacyComponentSerializer.legacySection().toBuilder().extractUrls().build().deserialize(report.getReason());
-				reports.remove(code);
-				if(ADMIN_TIMEOUT != null) {
-					Component comp = ADMIN_TIMEOUT.replaceText(Replacer.ACCUSED.rep(report.getName())).replaceText(Replacer.REPORTER.rep(report.getReporter())).replaceText(Replacer.REASON.rep(reason));
-					comp = MiscUtil.deepReplace(comp, Replacer.ACCUSED.getMatch(), report.getName());
-					comp = MiscUtil.deepReplace(comp, Replacer.REPORTER.getMatch(), report.getReporter());
-					comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
-					final Component c = comp;
-					plugin.getProxyServer().getPlayers().parallelStream().filter(plugin.hasPermAndNotLobby("adminutilities.admin.notify.chatreport")).forEach(p -> p.sendMessage(PREFIX.append(c)));
-				}
-				CommonPlayer pp = plugin.getProxyServer().getPlayer(report.getReporter());
-				if (pp != null && TIMEOUT != null) {
-					Component comp = TIMEOUT.replaceText(Replacer.ACCUSED.rep(report.getName())).replaceText(Replacer.REPORTER.rep(report.getReporter())).replaceText(Replacer.REASON.rep(reason));
-					comp = MiscUtil.deepReplace(comp, Replacer.ACCUSED.getMatch(), report.getName());
-					comp = MiscUtil.deepReplace(comp, Replacer.REPORTER.getMatch(), report.getReporter());
-					comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
-					pp.sendMessage(PREFIX.append(comp));
-				}
-			}
+		ExecutedTask task = this.plugin.getProxyServer().getScheduler().runTaskLater(() -> {
+			Component reason = LegacyComponentSerializer.legacySection().toBuilder().extractUrls().build().deserialize(report.getReason());
+			reports.remove(code);
+			trySendTimeoutReportToAdmins(report, reason);
+			trySendTimeoutReportToPlayer(report, reason);
+			this.logReport(report, null, ReportResult.TIMEOUT);
 		}, Config.COMMAND_CHATREPORT_TIMEOUT.getInt(), TimeUnit.SECONDS);
 		reports.put(code, new SimpleEntry<>(report, task));
 		sendNewReport(code);
@@ -146,43 +147,51 @@ public class ChatReportManager {
 	}
 	
 	
-	public boolean unregisterReport(final String code, String admin, Boolean accepted) {
-		if(code == null) return false;
-		if(!reports.containsKey(code)) return false;
-		ChatReport report = reports.get(code).getKey();
-		ExecutedTask task = reports.get(code).getValue();
-		if(task == null) return false;
-		task.cancel();
-		reports.remove(code);
-		Component messages = buildMessagesComponent(report.getMessages());
-		Component admmsg = null;
-		if(accepted) admmsg = this.ADMIN_ACCEPTED;
-		else if(!accepted) admmsg = this.ADMIN_REJECTED;
-		Component reason = LegacyComponentSerializer.legacySection().toBuilder().extractUrls().build().deserialize(report.getReason());
-		if(admmsg != null) {
-			Component comp = admmsg.replaceText(Replacer.ACCUSED.rep(report.getName())).replaceText(Replacer.REPORTER.rep(report.getReporter()))
-					.replaceText(Replacer.ADMIN.rep(admin)).replaceText(Replacer.ID.rep(code))
-					.replaceText(Replacer.DATE.rep(MiscUtil.parseOnlyDate(report.getTimestamp())))
-					.replaceText(Replacer.TIME.rep(MiscUtil.parseOnlyTime(report.getTimestamp())))
-					.replaceText(Replacer.MESSAGES_LIST.rep(messages))
-					.replaceText(Replacer.REASON.rep(reason));
-			comp = MiscUtil.deepReplace(comp, Replacer.ACCUSED.getMatch(), report.getName());
-			comp = MiscUtil.deepReplace(comp, Replacer.REPORTER.getMatch(), report.getReporter());
-			comp = MiscUtil.deepReplace(comp, Replacer.ID.getMatch(), code);
-			comp = MiscUtil.deepReplace(comp, Replacer.ADMIN.getMatch(), admin);
-			comp = MiscUtil.deepReplace(comp, Replacer.DATE.getMatch(), MiscUtil.parseOnlyDate(report.getTimestamp()));
-			comp = MiscUtil.deepReplace(comp, Replacer.TIME.getMatch(), MiscUtil.parseOnlyTime(report.getTimestamp()));
-			comp = MiscUtil.deepReplace(comp, Replacer.MESSAGES_LIST.getMatch(), messages);
-			comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
-			final Component c = comp;
-			this.plugin.getProxyServer().getPlayers().parallelStream().filter(this.plugin.hasPermAndNotLobby("adminutilities.admin.notify.chatreport")).forEach(p -> p.sendMessage(this.PREFIX.append(c)));
+	public boolean unregisterReport(@NotNull String code, @NotNull String admin, @NotNull boolean accepted) {
+		var reportEntry = reports.get(code);
+		if(reportEntry != null) {
+			ChatReport report = reportEntry.getKey();
+			ExecutedTask task = reportEntry.getValue();
+			if (task != null) {
+				task.cancel();
+				reports.remove(code);
+				Component messages = buildMessagesComponent(report.getMessages());
+				Component reason = LegacyComponentSerializer.legacySection().toBuilder().extractUrls().build().deserialize(report.getReason());
+				trySendUnregisterReportToAdmins(report, code, messages, reason, admin, accepted);
+				trySendUnregisterReportToPlayer(report, code, messages, reason, admin, accepted);
+				this.logReport(report, admin, accepted ? ReportResult.ACCEPT : ReportResult.REJECT);
+				return true;
+			}
 		}
-		CommonPlayer pp = this.plugin.getProxyServer().getPlayer(report.getReporter());
-		if(pp == null) return true;
-		Component message = null;
-		if(accepted) message = this.ACCEPTED;
-		else if(!accepted) message = this.REJECTED;
-		if (message != null) {
+		return false;
+	}
+	
+	private void trySendUnregisterReportToAdmins(@NotNull ChatReport report, @NotNull String code, @NotNull Component messages, @NotNull Component reason, @NotNull String admin, @NotNull boolean accepted) {
+		Component admmsg = accepted ? this.ADMIN_ACCEPTED : this.ADMIN_REJECTED;
+		Component comp = admmsg.replaceText(Replacer.ACCUSED.rep(report.getName())).replaceText(Replacer.REPORTER.rep(report.getReporter()))
+				.replaceText(Replacer.ADMIN.rep(admin)).replaceText(Replacer.ID.rep(code))
+				.replaceText(Replacer.DATE.rep(MiscUtil.parseOnlyDate(report.getTimestamp())))
+				.replaceText(Replacer.TIME.rep(MiscUtil.parseOnlyTime(report.getTimestamp())))
+				.replaceText(Replacer.MESSAGES_LIST.rep(messages))
+				.replaceText(Replacer.REASON.rep(reason));
+		comp = MiscUtil.deepReplace(comp, Replacer.ACCUSED.getMatch(), report.getName());
+		comp = MiscUtil.deepReplace(comp, Replacer.REPORTER.getMatch(), report.getReporter());
+		comp = MiscUtil.deepReplace(comp, Replacer.ID.getMatch(), code);
+		comp = MiscUtil.deepReplace(comp, Replacer.ADMIN.getMatch(), admin);
+		comp = MiscUtil.deepReplace(comp, Replacer.DATE.getMatch(), MiscUtil.parseOnlyDate(report.getTimestamp()));
+		comp = MiscUtil.deepReplace(comp, Replacer.TIME.getMatch(), MiscUtil.parseOnlyTime(report.getTimestamp()));
+		comp = MiscUtil.deepReplace(comp, Replacer.MESSAGES_LIST.getMatch(), messages);
+		comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
+		final Component c = comp;
+		this.plugin.getProxyServer().getPlayers().stream()
+				.filter(this::canSeeChatReport)
+				.forEach(p -> p.sendMessage(this.PREFIX.append(c)));
+	}
+	
+	private void trySendUnregisterReportToPlayer(@NotNull ChatReport report, @NotNull String code, @NotNull Component messages, @NotNull Component reason, @NotNull String admin, @NotNull boolean accepted) {
+		CommonPlayer player = this.plugin.getProxyServer().getPlayer(report.getReporter());
+		if (player != null) {
+			Component message = accepted ? this.ACCEPTED : this.REJECTED;
 			Component comp = message.replaceText(Replacer.ACCUSED.rep(report.getName())).replaceText(Replacer.REPORTER.rep(report.getReporter()))
 					.replaceText(Replacer.ADMIN.rep(admin)).replaceText(Replacer.ID.rep(code))
 					.replaceText(Replacer.DATE.rep(MiscUtil.parseOnlyDate(report.getTimestamp())))
@@ -197,34 +206,110 @@ public class ChatReportManager {
 			comp = MiscUtil.deepReplace(comp, Replacer.TIME.getMatch(), MiscUtil.parseOnlyTime(report.getTimestamp()));
 			comp = MiscUtil.deepReplace(comp, Replacer.MESSAGES_LIST.getMatch(), messages);
 			comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
-			pp.sendMessage(this.PREFIX.append(comp));
+			player.sendMessage(this.PREFIX.append(comp));
 		}
-		return true;
+	}
+	
+	private void trySendTimeoutReportToAdmins(@NotNull ChatReport report, @NotNull Component reason) {
+		if(ADMIN_TIMEOUT != null) {
+			Component comp = ADMIN_TIMEOUT.replaceText(Replacer.ACCUSED.rep(report.getName())).replaceText(Replacer.REPORTER.rep(report.getReporter())).replaceText(Replacer.REASON.rep(reason));
+			comp = MiscUtil.deepReplace(comp, Replacer.ACCUSED.getMatch(), report.getName());
+			comp = MiscUtil.deepReplace(comp, Replacer.REPORTER.getMatch(), report.getReporter());
+			comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
+			final Component c = comp;
+			plugin.getProxyServer().getPlayers().stream()
+					.filter(this::canSeeChatReport)
+					.forEach(p -> p.sendMessage(PREFIX.append(c)));
+		}
+	}
+	
+	private void trySendTimeoutReportToPlayer(@NotNull ChatReport report, @NotNull Component reason) {
+		if (TIMEOUT != null) {
+			CommonPlayer player = plugin.getProxyServer().getPlayer(report.getReporter());
+			if (player != null) {
+				Component comp = TIMEOUT.replaceText(Replacer.ACCUSED.rep(report.getName())).replaceText(Replacer.REPORTER.rep(report.getReporter())).replaceText(Replacer.REASON.rep(reason));
+				comp = MiscUtil.deepReplace(comp, Replacer.ACCUSED.getMatch(), report.getName());
+				comp = MiscUtil.deepReplace(comp, Replacer.REPORTER.getMatch(), report.getReporter());
+				comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
+				player.sendMessage(PREFIX.append(comp));
+			}
+		}
 	}
 	
 	
-	private void sendNewReport(String code) {
-		if(code == null) return;
-		if(!reports.containsKey(code)) return;
-		ChatReport cr = reports.get(code).getKey();
+	private void sendNewReport(@NotNull String code) {
+		if (reports.containsKey(code)) {
+			ChatReport report = reports.get(code).getKey();
+			this.plugin.getProxyServer().getPlayers().stream()
+					.filter(this::canSeeChatReport)
+					.forEach(report.getAdmins()::add);
+			if (this.ADMIN_REPORTED != null) {
+				Component reason = LegacyComponentSerializer.legacySection().toBuilder().extractUrls().build().deserialize(report.getReason());
+				Component messages = buildMessagesComponent(report.getMessages());
+				Component comp = this.ADMIN_REPORTED.replaceText(Replacer.ACCUSED.rep(report.getName()))
+						.replaceText(Replacer.REPORTER.rep(report.getReporter()))
+						.replaceText(Replacer.ID.rep(code))
+						.replaceText(Replacer.DATE.rep(MiscUtil.parseOnlyDate(report.getTimestamp())))
+						.replaceText(Replacer.TIME.rep(MiscUtil.parseOnlyTime(report.getTimestamp())))
+						.replaceText(Replacer.REASON.rep(reason))
+						.replaceText(Replacer.MESSAGES_LIST.rep(messages));
+				comp = MiscUtil.deepReplace(comp, Replacer.ACCUSED.getMatch(), report.getName());
+				comp = MiscUtil.deepReplace(comp, Replacer.REPORTER.getMatch(), report.getReporter());
+				comp = MiscUtil.deepReplace(comp, Replacer.ID.getMatch(), code);
+				comp = MiscUtil.deepReplace(comp, Replacer.DATE.getMatch(), MiscUtil.parseOnlyDate(report.getTimestamp()));
+				comp = MiscUtil.deepReplace(comp, Replacer.TIME.getMatch(), MiscUtil.parseOnlyTime(report.getTimestamp()));
+				comp = MiscUtil.deepReplace(comp, Replacer.MESSAGES_LIST.getMatch(), messages);
+				comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
+				final Component c = comp;
+				report.getAdmins().forEach(p -> p.sendMessage(this.PREFIX.append(c)));
+			}
+		}
 		
-		if (this.ADMIN_REPORTED == null) return;
-		Component reason = LegacyComponentSerializer.legacySection().toBuilder().extractUrls().build().deserialize(cr.getReason());
-		Component messages = buildMessagesComponent(cr.getMessages());
-		Component comp = this.ADMIN_REPORTED.replaceText(Replacer.ACCUSED.rep(cr.getName())).replaceText(Replacer.REPORTER.rep(cr.getReporter()))
-			.replaceText(Replacer.ID.rep(code))
-			.replaceText(Replacer.DATE.rep(MiscUtil.parseOnlyDate(cr.getTimestamp())))
-			.replaceText(Replacer.TIME.rep(MiscUtil.parseOnlyTime(cr.getTimestamp())))
-			.replaceText(Replacer.REASON.rep(reason)).replaceText(Replacer.MESSAGES_LIST.rep(messages));
-		comp = MiscUtil.deepReplace(comp, Replacer.ACCUSED.getMatch(), cr.getName());
-		comp = MiscUtil.deepReplace(comp, Replacer.REPORTER.getMatch(), cr.getReporter());
-		comp = MiscUtil.deepReplace(comp, Replacer.ID.getMatch(), code);
-		comp = MiscUtil.deepReplace(comp, Replacer.DATE.getMatch(), MiscUtil.parseOnlyDate(cr.getTimestamp()));
-		comp = MiscUtil.deepReplace(comp, Replacer.TIME.getMatch(), MiscUtil.parseOnlyTime(cr.getTimestamp()));
-		comp = MiscUtil.deepReplace(comp, Replacer.MESSAGES_LIST.getMatch(), messages);
-		comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
-		final Component c = comp;
-		this.plugin.getProxyServer().getPlayers().parallelStream().filter(this.plugin.hasPermAndNotLobby("adminutilities.admin.notify.chatreport")).forEach(p -> p.sendMessage(this.PREFIX.append(c)));
+	}
+	
+	private void logReport(@NotNull ChatReport report, @Nullable String admin, @NotNull ReportResult result) {
+		String admins = report.getAdmins().stream()
+				.map(a -> a.getName())
+				.collect(Collectors.joining(","));
+		String messages = report.getMessages().stream()
+				.map(Entry::getValue)
+				.map(s -> "  " + s)
+				.collect(Collectors.joining(System.lineSeparator()));
+		String str = """
+				========== %s - %s ==========
+				Reporter: %s
+				Reason: %s
+				Result: %s
+				Admin: %s
+				All admins: [%s]
+				Chat:
+				%s
+				
+				""".formatted(
+						report.getName(),
+						LocalDateTime.now().withNano(0).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+						report.getReporter(),
+						report.getReason(),
+						result,
+						admin != null ? admin : "-",
+						admins,
+						messages);
+		try {
+			Path logsFolder = this.plugin.getDataDirectory().resolve("logs");
+			if (!Files.isDirectory(logsFolder)) {
+				if (Files.exists(logsFolder)) {
+					Files.move(logsFolder, Path.of(logsFolder.toString() + "-backup"));
+				}
+				Files.createDirectory(logsFolder);
+			}
+			Files.writeString(logsFolder.resolve("chatreports.log"), str, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private boolean canSeeChatReport(CommonPlayer player) {
+		return player.hasPermission("adminutilities.admin.notify.chatreport");
 	}
 	
 
