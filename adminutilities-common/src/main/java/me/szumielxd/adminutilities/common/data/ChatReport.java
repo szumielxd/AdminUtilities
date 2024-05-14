@@ -1,7 +1,11 @@
 package me.szumielxd.adminutilities.common.data;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map.Entry;
+
+import me.szumielxd.adminutilities.common.objects.CommonPlayer;
 
 public class ChatReport {
 	
@@ -10,7 +14,8 @@ public class ChatReport {
 	private String name;
 	private String reporter;
 	private String reason;
-	private ArrayList<Entry<Long, String>> messages;
+	private List<Entry<Long, String>> messages;
+	private List<CommonPlayer> admins = new LinkedList<>();
 	
 	
 	public ChatReport(ChatPlayer cp, String reporter, String reason) {
@@ -33,16 +38,20 @@ public class ChatReport {
 		return this.timestamp;
 	}
 	
-	public ArrayList<Entry<Long, String>> getMessages(){
+	public List<Entry<Long, String>> getMessages(){
 		return new ArrayList<>(this.messages);
 	}
 	
 	public String getReporter() {
-		return new String(this.reporter);
+		return this.reporter;
 	}
 	
 	public String getReason() {
-		return new String(this.reason);
+		return this.reason;
+	}
+	
+	public List<CommonPlayer> getAdmins() {
+		return this.admins;
 	}
 	
 

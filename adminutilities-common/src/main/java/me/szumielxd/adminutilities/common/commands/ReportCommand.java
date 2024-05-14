@@ -1,7 +1,7 @@
 package me.szumielxd.adminutilities.common.commands;
 
 import java.util.Arrays;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -73,7 +73,7 @@ public class ReportCommand extends CommonCommand {
 		if (s.hasPermission("adminutilities.command.report.format")) reason = MiscUtil.translateAlternateColorCodes('&', reason);
 		OtherReport cr = new OtherReport(cp.getName(), s.getName(), reason);
 		Component reasonComponent = LegacyComponentSerializer.legacySection().toBuilder().extractUrls().build().deserialize(cr.getReason());
-		Function<Component,Component> rep = (comp) -> {
+		UnaryOperator<Component> rep = comp -> {
 			comp = MiscUtil.deepReplace(comp, "accused", cr.getName());
 			comp = MiscUtil.deepReplace(comp, "reporter", cr.getReporter());
 			comp = MiscUtil.deepReplace(comp, "reason", LegacyComponentSerializer.legacySection().toBuilder().extractUrls().build().serialize(reasonComponent));

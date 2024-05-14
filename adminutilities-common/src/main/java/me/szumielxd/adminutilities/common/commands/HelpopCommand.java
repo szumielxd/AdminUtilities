@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import me.szumielxd.adminutilities.common.AdminUtilities;
 import me.szumielxd.adminutilities.common.configuration.Config;
@@ -78,16 +79,15 @@ public class HelpopCommand extends CommonCommand {
 	}
 	
 	
-	private @NotNull Component parsePlaceholders(@NotNull Component comp, @NotNull CommonSender sender, @NotNull CommonSender receiver, @NotNull ComponentLike message) {
+	private @NotNull Component parsePlaceholders(@NotNull Component comp, @NotNull CommonSender sender, @Nullable CommonSender receiver, @NotNull ComponentLike message) {
 		String sDisplay = MiscUtil.getDisplayName(sender);
-		String sGroups = String.join(", ", ((sender instanceof CommonPlayer) ? ((CommonPlayer) sender).getGroups().toArray(new String[0]) : new String[0]));
+		String sGroups = String.join(", ", sender instanceof CommonPlayer pps ? pps.getGroups().toArray(new String[0]) : new String[0]);
 		Locale sLocale = Locale.getDefault();
 		int sVersion = -1;
 		String sServer = "";
 		UUID sUUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 		boolean sForge = false;
-		if (sender instanceof CommonPlayer) {
-			CommonPlayer pps = (CommonPlayer) sender;
+		if (sender instanceof CommonPlayer pps) {
 			sLocale = pps.locale();
 			sVersion = pps.getVersion();
 			sServer = pps.getWorldName();
@@ -109,14 +109,13 @@ public class HelpopCommand extends CommonCommand {
 		
 		if (receiver != null) {
 			String rDisplay = MiscUtil.getDisplayName(receiver);
-			String rGroups = String.join(", ", ((receiver instanceof CommonPlayer) ? ((CommonPlayer) receiver).getGroups().toArray(new String[0]) : new String[0]));
+			String rGroups = String.join(", ", receiver instanceof CommonPlayer recp ? recp.getGroups().toArray(new String[0]) : new String[0]);
 			Locale rLocale = Locale.getDefault();
 			int rVersion = -1;
 			String rServer = "";
 			UUID rUUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 			boolean rForge = false;
-			if (receiver instanceof CommonPlayer) {
-				CommonPlayer ppr = (CommonPlayer) receiver;
+			if (receiver instanceof CommonPlayer ppr) {
 				rLocale = ppr.locale();
 				rVersion = ppr.getVersion();
 				rServer = ppr.getWorldName();
@@ -142,7 +141,7 @@ public class HelpopCommand extends CommonCommand {
 	}
 	
 	public @NotNull TextReplacementConfig rep(@NotNull String match, @NotNull Object toReplace) {
-		if (toReplace instanceof ComponentLike) return TextReplacementConfig.builder().matchLiteral("{"+match+"}").replacement((ComponentLike) toReplace).build();
+		if (toReplace instanceof ComponentLike rep) return TextReplacementConfig.builder().matchLiteral("{"+match+"}").replacement(rep).build();
 		return TextReplacementConfig.builder().matchLiteral("{"+match+"}").replacement(String.valueOf(toReplace)).build();
 	}
 	

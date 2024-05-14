@@ -1,8 +1,6 @@
 package me.szumielxd.adminutilities.velocity;
 
-import java.io.File;
 import java.nio.file.Path;
-import java.util.function.Predicate;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
@@ -18,6 +16,7 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 
+import lombok.Getter;
 import me.szumielxd.adminutilities.common.AdminUtilities;
 import me.szumielxd.adminutilities.common.AdminUtilitiesProvider;
 import me.szumielxd.adminutilities.common.commands.AdminChatCommand;
@@ -33,9 +32,7 @@ import me.szumielxd.adminutilities.common.data.ChatPlayer;
 import me.szumielxd.adminutilities.common.managers.AdminChatManager;
 import me.szumielxd.adminutilities.common.managers.ChatReportManager;
 import me.szumielxd.adminutilities.common.managers.ReportManager;
-import me.szumielxd.adminutilities.common.objects.CommonPlayer;
 import me.szumielxd.adminutilities.common.objects.CommonProxy;
-import me.szumielxd.adminutilities.common.objects.CommonSender;
 import me.szumielxd.adminutilities.velocity.commands.VelocityCommandWrapper;
 import me.szumielxd.adminutilities.velocity.listeners.ChatListener;
 import me.szumielxd.adminutilities.velocity.objects.VelocityProxy;
@@ -57,7 +54,7 @@ public class AdminUtilitiesVelocity implements AdminUtilities {
 	
 	private final ProxyServer server;
 	private final Logger logger;
-	private final File dataFolder;
+	@Getter private final Path dataDirectory;
 	
 	private VelocityProxy proxy;
 	
@@ -71,27 +68,13 @@ public class AdminUtilitiesVelocity implements AdminUtilities {
 	public AdminUtilitiesVelocity(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
 		this.server = server;
 		this.logger = logger;
-		this.dataFolder = dataDirectory.toFile();
+		this.dataDirectory = dataDirectory;
 	}
 	
 	
 	@Subscribe
 	public void onProxyInitialization(ProxyInitializeEvent event) {
 	    this.onEnable();
-	}
-	
-	
-	@Override
-	public Predicate<CommonSender> hasPermAndNotLobby(String permission) {
-		return (sender) -> {
-			if (!sender.hasPermission(permission)) return false;
-			if (sender instanceof CommonPlayer) {
-				CommonPlayer player = (CommonPlayer) sender;
-				if (player.getWorldName() == null) return false;
-				return !this.isLobby(player.getWorldName());
-			}
-			return true;
-		};
 	}
 	
 	
@@ -127,7 +110,7 @@ public class AdminUtilitiesVelocity implements AdminUtilities {
 		AdminUtilitiesProvider.init(this);
 		this.proxy = new VelocityProxy(this);
 		
-		Config.load(new File(this.dataFolder, "config.yml"), this);
+		Config.load(this.dataDirectory.resolve("config.yml").toFile(), this);
 		this.registerCommand(new MainCommand(this));
 		this.getProxy().getEventManager().register(this, new ChatListener(this));
 		

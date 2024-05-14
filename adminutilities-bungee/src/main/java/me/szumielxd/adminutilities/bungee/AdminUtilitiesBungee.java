@@ -2,6 +2,7 @@ package me.szumielxd.adminutilities.bungee;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Predicate;
 
@@ -27,9 +28,7 @@ import me.szumielxd.adminutilities.common.managers.ChatReportManager;
 import me.szumielxd.adminutilities.common.managers.ReportManager;
 import me.szumielxd.adminutilities.common.objects.CommonProxy;
 import me.szumielxd.adminutilities.common.objects.CommonSender;
-import me.szumielxd.lobbysystem.LobbySystem;
 import net.kyori.adventure.platform.bungeecord.BungeeAudiences;
-import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 
@@ -45,14 +44,9 @@ public class AdminUtilitiesBungee extends Plugin implements AdminUtilities {
 	
 	
 	public Predicate<CommonSender> hasPermAndNotLobby(String permission) {
-		return (sender) -> {
-			if (!sender.hasPermission(permission)) return false;
-			if (sender instanceof ProxiedPlayer) {
-				ProxiedPlayer player = (ProxiedPlayer) sender;
-				if (player.getServer() == null) return false;
-				return !this.isLobby(player.getServer().getInfo());
-			}
-			return true;
+		return sender -> {
+			return sender.hasPermission(permission)
+					&& (sender instanceof ProxiedPlayer player && player.getServer() != null);
 		};
 	}
 	
@@ -70,14 +64,6 @@ public class AdminUtilitiesBungee extends Plugin implements AdminUtilities {
 	}
 	public AdminChatManager getAdminChatManager() {
 		return this.adminChatManager;
-	}
-	
-	public boolean isLobby(ServerInfo server) {
-		try {
-			Class.forName("me.szumielxd.lobbysystem.LobbySystem");
-			return LobbySystem.getInstance().isLobby(server);
-		} catch (ClassNotFoundException e) {}
-		return false;
 	}
 	
 	
@@ -152,6 +138,12 @@ public class AdminUtilitiesBungee extends Plugin implements AdminUtilities {
 	@Override
 	public @NotNull String getVersion() {
 		return this.getDescription().getVersion();
+	}
+
+
+	@Override
+	public @NotNull Path getDataDirectory() {
+		return this.getDataFolder().toPath();
 	}
 	
 

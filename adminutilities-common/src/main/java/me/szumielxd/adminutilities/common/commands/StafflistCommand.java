@@ -44,7 +44,7 @@ public class StafflistCommand extends CommonCommand {
 	private final @NotNull TextComponent FORMAT_INDENTATION;
 	private final @NotNull AdminUtilities plugin;
 	private long lastUpdate = 0L;
-	private @NotNull CompletableFuture<Map<String, Map<UUID, Map.Entry<String, Boolean>>>> cacheFuture;
+	private @NotNull CompletableFuture<Map<String, Map<UUID, Map.Entry<String, Boolean>>>> cacheFuture = CompletableFuture.completedFuture(Map.of());
 	
 
 	public StafflistCommand(@NotNull AdminUtilities plugin) {
@@ -95,7 +95,7 @@ public class StafflistCommand extends CommonCommand {
 						}
 						UUID uuid = iter.next();
 						Entry<String, Boolean> status = users.get(uuid);
-						Component user = (status.getValue() ? FORMAT_ONLINE : FORMAT_OFFLINE).replaceText(rep("player", status.getKey()));
+						Component user = (status.getValue().booleanValue() ? FORMAT_ONLINE : FORMAT_OFFLINE).replaceText(rep("player", status.getKey()));
 						length += MiscUtil.getPlainVisibleText(user).length();
 						message = message.append(user);
 					}
@@ -118,7 +118,8 @@ public class StafflistCommand extends CommonCommand {
 				Class.forName("net.luckperms.api.LuckPermsProvider");
 			} catch (ClassNotFoundException e2) {
 				// fallback for lack of LuckPerms
-				return this.cacheFuture = CompletableFuture.completedFuture(Collections.emptyMap());
+				this.cacheFuture = CompletableFuture.completedFuture(Collections.emptyMap());
+				return this.cacheFuture;
 			}
 			final CompletableFuture<Map<String, Map<UUID, Map.Entry<String, Boolean>>>> future = new CompletableFuture<>();
 			new Thread(() -> {
@@ -126,16 +127,14 @@ public class StafflistCommand extends CommonCommand {
 					Map<String, Map<UUID, Map.Entry<String, Boolean>>> staff = new LinkedHashMap<>();
 					UserManager mgr = LuckPermsProvider.get().getUserManager();
 					GroupManager gmgr = LuckPermsProvider.get().getGroupManager();
-					Integer.compare(1, 23);
 					// for correct order
 					Config.STAFF_LIST.getValueMap().keySet().stream().sorted((g1, g2) -> {
 						return -Integer.compare(Optional.ofNullable(gmgr.getGroup(g1)).map(gr -> gr.getWeight().orElse(0)).orElse(0),
 								Optional.ofNullable(gmgr.getGroup(g2)).map(gr -> gr.getWeight().orElse(0)).orElse(0));
 					}).distinct().forEachOrdered(g -> staff.put(g, new HashMap<>()));
 					staff.keySet().parallelStream().forEach(g -> {
-						Set<UUID> users;
 						try {
-							users = mgr.searchAll(NodeMatcher.key(InheritanceNode.builder(g).build().getKey())).get().keySet();
+							Set<UUID> users = mgr.searchAll(NodeMatcher.key(InheritanceNode.builder(g).build().getKey())).get().keySet();
 							Map<UUID, Map.Entry<String, Boolean>> map = new HashMap<>();
 							// lookup for names
 							users.parallelStream().forEach(uuid -> {
@@ -169,7 +168,7 @@ public class StafflistCommand extends CommonCommand {
 	
 	
 	public TextReplacementConfig rep(String match, Object toReplace) {
-		if (toReplace instanceof ComponentLike) return TextReplacementConfig.builder().matchLiteral("{"+match+"}").replacement((ComponentLike) toReplace).build();
+		if (toReplace instanceof ComponentLike rep) return TextReplacementConfig.builder().matchLiteral("{"+match+"}").replacement(rep).build();
 		return TextReplacementConfig.builder().matchLiteral("{"+match+"}").replacement(String.valueOf(toReplace)).build();
 	}
 	

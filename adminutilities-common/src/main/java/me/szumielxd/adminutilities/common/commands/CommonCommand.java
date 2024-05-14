@@ -18,7 +18,7 @@ public abstract class CommonCommand {
 	private final @NotNull String[] aliases;
 	
 	
-	public CommonCommand(@NotNull String name, @Nullable String permission, @NotNull String... aliases) {
+	protected CommonCommand(@NotNull String name, @Nullable String permission, @NotNull String... aliases) {
 		this.name = Objects.requireNonNull(name, "name cannot be null");
 		this.permission = permission;
 		this.aliases = Arrays.copyOf(Objects.requireNonNull(aliases, "aliases cannot be null"), aliases.length);

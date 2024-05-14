@@ -2,7 +2,7 @@ package me.szumielxd.adminutilities.common.commands;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -26,9 +26,7 @@ public class MainCommand extends CommonCommand {
 			if (args[0].equalsIgnoreCase("reload") || args[0].equalsIgnoreCase("rl")) {
 				if (sender.hasPermission("adminutilities.command.main.reload")) {
 					boolean failed = false;
-					Function<String,String> replacer = (str) -> {
-						return str.replace("{plugin}", this.plugin.getName()).replace("{version}", this.plugin.getVersion());
-					};
+					UnaryOperator<String> replacer = str -> str.replace("{plugin}", this.plugin.getName()).replace("{version}", this.plugin.getVersion());
 					sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize(replacer.apply(Config.PREFIX.getString()+Config.COMMAND_MAIN_SUB_RELOAD_EXECUTE.getString())));
 					try {
 						this.plugin.onDisable();
@@ -42,8 +40,9 @@ public class MainCommand extends CommonCommand {
 						e.printStackTrace();
 						failed = true;
 					}
-					if (failed) sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize(replacer.apply(Config.PREFIX.getString()+Config.COMMAND_MAIN_SUB_RELOAD_ERROR.getString())));
-					else sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize(replacer.apply(Config.PREFIX.getString()+Config.COMMAND_MAIN_SUB_RELOAD_SUCCESS.getString())));
+					sender.sendMessage(LegacyComponentSerializer.legacySection()
+							.deserialize(replacer.apply(Config.PREFIX.getString()
+									+ (failed ? Config.COMMAND_MAIN_SUB_RELOAD_ERROR : Config.COMMAND_MAIN_SUB_RELOAD_SUCCESS).getString())));
 				} else {
 					sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize(Config.PREFIX.getString()+Config.MESSAGES_PERM_ERROR.getString()));
 				}

@@ -47,7 +47,9 @@ public class ReportManager {
 			return this.match;
 		}
 		public TextReplacementConfig rep(Object toReplace) {
-			if (toReplace instanceof ComponentLike) return TextReplacementConfig.builder().matchLiteral("{"+match+"}").replacement((ComponentLike) toReplace).build();
+			if (toReplace instanceof ComponentLike comp) {
+				return TextReplacementConfig.builder().matchLiteral("{"+match+"}").replacement(comp).build();
+			}
 			return TextReplacementConfig.builder().matchLiteral("{"+match+"}").replacement(String.valueOf(toReplace)).build();
 		}
 		
@@ -79,7 +81,7 @@ public class ReportManager {
 	
 	public boolean registerReport(final OtherReport report) {
 		
-		ArrayList<String> keys = new ArrayList<String>(reports.keySet());
+		ArrayList<String> keys = new ArrayList<>(reports.keySet());
 		HashMap<String, Entry<OtherReport, ExecutedTask>> map = new HashMap<>(reports);
 		if(!keys.isEmpty()) for(String code : keys) {
 			OtherReport cr = map.get(code).getKey();
@@ -90,27 +92,26 @@ public class ReportManager {
 			reportCode = MiscUtil.randomString(7);
 		} while (reports.containsKey(reportCode));
 		final String code = reportCode;
-		ExecutedTask task = this.plugin.getProxyServer().getScheduler().runTaskLater(new Runnable() {
-			@Override
-			public void run() {
-				Component reason = LegacyComponentSerializer.legacySection().toBuilder().extractUrls().build().deserialize(report.getReason());
-				reports.remove(code);
-				if(ADMIN_TIMEOUT != null) {
-					Component comp = ADMIN_TIMEOUT.replaceText(Replacer.ACCUSED.rep(report.getName())).replaceText(Replacer.REPORTER.rep(report.getReporter())).replaceText(Replacer.REASON.rep(reason));
-					comp = MiscUtil.deepReplace(comp, Replacer.ACCUSED.getMatch(), report.getName());
-					comp = MiscUtil.deepReplace(comp, Replacer.REPORTER.getMatch(), report.getReporter());
-					comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
-					final Component c = comp;
-					plugin.getProxyServer().getPlayers().parallelStream().filter(plugin.hasPermAndNotLobby("adminutilities.admin.notify.chatreport")).forEach(p -> p.sendMessage(PREFIX.append(c)));
-				}
-				CommonPlayer pp = plugin.getProxyServer().getPlayer(report.getReporter());
-				if (pp != null && TIMEOUT != null) {
-					Component comp = TIMEOUT.replaceText(Replacer.ACCUSED.rep(report.getName())).replaceText(Replacer.REPORTER.rep(report.getReporter())).replaceText(Replacer.REASON.rep(reason));
-					comp = MiscUtil.deepReplace(comp, Replacer.ACCUSED.getMatch(), report.getName());
-					comp = MiscUtil.deepReplace(comp, Replacer.REPORTER.getMatch(), report.getReporter());
-					comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
-					pp.sendMessage(PREFIX.append(comp));
-				}
+		ExecutedTask task = this.plugin.getProxyServer().getScheduler().runTaskLater(() -> {
+			Component reason = LegacyComponentSerializer.legacySection().toBuilder().extractUrls().build().deserialize(report.getReason());
+			reports.remove(code);
+			if(ADMIN_TIMEOUT != null) {
+				Component comp = ADMIN_TIMEOUT.replaceText(Replacer.ACCUSED.rep(report.getName())).replaceText(Replacer.REPORTER.rep(report.getReporter())).replaceText(Replacer.REASON.rep(reason));
+				comp = MiscUtil.deepReplace(comp, Replacer.ACCUSED.getMatch(), report.getName());
+				comp = MiscUtil.deepReplace(comp, Replacer.REPORTER.getMatch(), report.getReporter());
+				comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
+				final Component c = PREFIX.append(comp);
+				plugin.getProxyServer().getPlayers().parallelStream()
+						.filter(this::canSeeReport)
+						.forEach(p -> p.sendMessage(c));
+			}
+			CommonPlayer pp = plugin.getProxyServer().getPlayer(report.getReporter());
+			if (pp != null && TIMEOUT != null) {
+				Component comp = TIMEOUT.replaceText(Replacer.ACCUSED.rep(report.getName())).replaceText(Replacer.REPORTER.rep(report.getReporter())).replaceText(Replacer.REASON.rep(reason));
+				comp = MiscUtil.deepReplace(comp, Replacer.ACCUSED.getMatch(), report.getName());
+				comp = MiscUtil.deepReplace(comp, Replacer.REPORTER.getMatch(), report.getReporter());
+				comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
+				pp.sendMessage(PREFIX.append(comp));
 			}
 		}, Config.COMMAND_REPORT_TIMEOUT.getInt(), TimeUnit.SECONDS);
 		reports.put(code, new SimpleEntry<>(report, task));
@@ -143,8 +144,10 @@ public class ReportManager {
 			comp = MiscUtil.deepReplace(comp, Replacer.DATE.getMatch(), MiscUtil.parseOnlyDate(report.getTimestamp()));
 			comp = MiscUtil.deepReplace(comp, Replacer.TIME.getMatch(), MiscUtil.parseOnlyTime(report.getTimestamp()));
 			comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
-			final Component c = comp;
-			this.plugin.getProxyServer().getPlayers().parallelStream().filter(this.plugin.hasPermAndNotLobby("adminutilities.admin.notify.chatreport")).forEach(p -> p.sendMessage(this.PREFIX.append(c)));
+			final Component c = this.PREFIX.append(comp);
+			this.plugin.getProxyServer().getPlayers().parallelStream()
+					.filter(this::canSeeReport)
+					.forEach(p -> p.sendMessage(c));
 		}
 		CommonPlayer pp = this.plugin.getProxyServer().getPlayer(report.getReporter());
 		if(pp == null) return true;
@@ -186,8 +189,14 @@ public class ReportManager {
 		comp = MiscUtil.deepReplace(comp, Replacer.DATE.getMatch(), MiscUtil.parseOnlyDate(cr.getTimestamp()));
 		comp = MiscUtil.deepReplace(comp, Replacer.TIME.getMatch(), MiscUtil.parseOnlyTime(cr.getTimestamp()));
 		comp = MiscUtil.deepReplace(comp, Replacer.REASON.getMatch(), reason);
-		final Component c = comp;
-		this.plugin.getProxyServer().getPlayers().parallelStream().filter(this.plugin.hasPermAndNotLobby("adminutilities.admin.notify.chatreport")).forEach(p -> p.sendMessage(this.PREFIX.append(c)));
+		final Component c = this.PREFIX.append(comp);
+		this.plugin.getProxyServer().getPlayers().parallelStream()
+				.filter(this::canSeeReport)
+				.forEach(p -> p.sendMessage(c));
+	}
+	
+	private boolean canSeeReport(CommonPlayer player) {
+		return player.hasPermission("adminutilities.admin.notify.report");
 	}
 	
 

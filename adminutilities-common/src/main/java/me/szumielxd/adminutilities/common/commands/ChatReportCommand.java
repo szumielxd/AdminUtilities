@@ -1,7 +1,7 @@
 package me.szumielxd.adminutilities.common.commands;
 
 import java.util.Arrays;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -43,7 +43,7 @@ public class ChatReportCommand extends CommonCommand {
 	public void execute(@NotNull CommonSender s, @NotNull String[] args) {
 		
 		if(!(s instanceof CommonPlayer)) {
-			s.sendMessage(LegacyComponentSerializer.legacySection().deserialize(Config.PREFIX.getString()+Config.MESSAGES_CONSOLE_ERROR.getString()));
+			s.sendMessage(LegacyComponentSerializer.legacySection().deserialize(Config.PREFIX.getString() + Config.MESSAGES_CONSOLE_ERROR.getString()));
 			return;
 		}
 		
@@ -77,7 +77,7 @@ public class ChatReportCommand extends CommonCommand {
 		if (s.hasPermission("adminutilities.command.chatreport.format")) reason = MiscUtil.translateAlternateColorCodes('&', reason);
 		ChatReport cr = new ChatReport(cp, s.getName(), reason);
 		Component reasonComponent = LegacyComponentSerializer.legacySection().toBuilder().extractUrls().build().deserialize(cr.getReason());
-		Function<Component,Component> rep = (comp) -> {
+		UnaryOperator<Component> rep = comp -> {
 			comp = MiscUtil.deepReplace(comp, "accused", cr.getName());
 			comp = MiscUtil.deepReplace(comp, "reporter", cr.getReporter());
 			comp = MiscUtil.deepReplace(comp, "reason", LegacyComponentSerializer.legacySection().toBuilder().extractUrls().build().serialize(reasonComponent));

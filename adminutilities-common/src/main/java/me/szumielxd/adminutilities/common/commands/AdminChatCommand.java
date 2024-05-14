@@ -10,15 +10,15 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 public class AdminChatCommand extends CommonCommand {
 	
-	private final AdminUtilities plugin;
+	private final @NotNull AdminUtilities plugin;
 
-	public AdminChatCommand(AdminUtilities plugin) {
+	public AdminChatCommand(@NotNull AdminUtilities plugin) {
 		super(Config.COMMAND_ADMINCHAT_NAME.getString(), ChannelType.ADMIN.getPermission(), Config.COMMAND_ADMINCHAT_ALIASES.getStringList().toArray(new String[0]));
 		this.plugin = plugin;
 	}
 
 	@Override
-	public void execute(@NotNull CommonSender sender, String[] args) {
+	public void execute(@NotNull CommonSender sender, @NotNull String[] args) {
 		if (args.length > 0) {
 			this.plugin.getAdminChatManager().sendMessage(ChannelType.ADMIN, sender, String.join(" ", args));
 			return;
